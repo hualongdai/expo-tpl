@@ -15,7 +15,10 @@ export default function Home() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Welcome to the Home Page</Text>
+      <Text style={styles.title}>Welcome to the Home Page!</Text>
+      <TouchableOpacity style={styles.button} onPress={handleSignOut}>
+        <Text style={styles.buttonText}>Sign Out</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -32,5 +35,19 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: 20,
+  },
+  button: {
+    width: "100%",
+    height: 40,
+    backgroundColor: "#007AFF",
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 5,
+    marginTop: 10,
+  },
+  buttonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });
