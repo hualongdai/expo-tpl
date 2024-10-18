@@ -4,50 +4,44 @@ import {
   DefaultTheme,
   ThemeProvider,
 } from "@react-navigation/native";
-import { useEffect, useState } from "react";
+import { useFonts } from "expo-font";
+import { useEffect } from "react";
 import { getCurrentUser } from "@/utils/supabase";
-import { RootSiblingParent } from "react-native-root-siblings";
 import * as SplashScreen from "expo-splash-screen"; 
 import { useColorScheme } from "@/hooks/useColorScheme";
+import { Provider } from "@ant-design/react-native";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
+  const [fontsLoaded] = useFonts({ antoutline: require('@ant-design/icons-react-native/fonts/antoutline.ttf') })
+
   useEffect(() => {
-    let isMounted = true;
     getCurrentUser().then((user) => {
-      if (isMounted) {
-        setIsLoading(false);
-        if (user) {
-          router.push("/(tabs)");
-        } else {
-          router.push("/login");
-        }
+      if (user) {
+        router.push("/(tabs)");
+      } else {
+        router.push("/login");
       }
     });
-    return () => {
-      isMounted = false;
-    };
   }, []);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
+    if (fontsLoaded) {
       SplashScreen.hideAsync();
-    }, 3000);
-    return () => clearTimeout(timer);
-  }, []);
+    }
+  }, [fontsLoaded]);
 
-  if (isLoading) {
+  if (!fontsLoaded) {
     return null;
   }
 
   return (
-    <RootSiblingParent>
+    <Provider>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -55,6 +49,6 @@ export default function RootLayout() {
           <Stack.Screen name="register" options={{ headerShown: false }} />
         </Stack>
       </ThemeProvider>
-    </RootSiblingParent>
+    </Provider>
   );
 }

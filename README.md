@@ -1,6 +1,6 @@
 # Tpl APP 👋
 
-The template APP built based on Expo and SupaBase has a built-in login and registration function, which can be used with simple configuration.
+The template APP built based on Expo, Antd Mobile and SupaBase has a built-in login and registration function, which can be used with simple configuration.
 
 requirements:
 
@@ -33,5 +33,6 @@ In the output, you'll find options to open the app in a
 - [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
 - [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
 - [Supabase](https://supabase.com)
+- [Antd Mobile](http://rn.mobile.ant.design/docs/react/introduce-cn)
 
 You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
