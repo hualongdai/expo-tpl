@@ -6,13 +6,6 @@ import { signOut } from "@/utils/supabase";
 export default function Home() {
   const router = useRouter();
 
-  const handleSignOut = async () => {
-    const { error } = await signOut();
-    if (!error) {
-      router.replace("/login");
-    }
-  };
-
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Welcome to the Home Page</Text>

@@ -19,14 +19,20 @@ export default function RootLayout() {
   const router = useRouter();
 
   useEffect(() => {
+    let isMounted = true;
     getCurrentUser().then((user) => {
-      setIsLoading(false);
-      if (user) {
-        router.replace("/(tabs)");
-      } else {
-        router.replace("/login");
+      if (isMounted) {
+        setIsLoading(false);
+        if (user) {
+          router.push("/(tabs)");
+        } else {
+          router.push("/login");
+        }
       }
     });
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -44,9 +50,9 @@ export default function RootLayout() {
     <RootSiblingParent>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="login" options={{ headerShown: false }} />
           <Stack.Screen name="register" options={{ headerShown: false }} />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         </Stack>
       </ThemeProvider>
     </RootSiblingParent>
