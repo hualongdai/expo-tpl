@@ -38,22 +38,6 @@ export default function Mine() {
       padding: 20,
       backgroundColor: "#f5f5f5",
     },
-    avatar: {
-      width: 100,
-      height: 100,
-      borderRadius: 50,
-      marginBottom: 20,
-    },
-    text: {
-      color: colorScheme === "light" ? "#000000" : "#FFFFFF",
-      fontSize: 18,
-      marginBottom: 10,
-    },
-    title: {
-      fontSize: 24,
-      fontWeight: "bold",
-      marginBottom: 20,
-    },
     button: {
       width: "100%",
       height: 40,
@@ -72,17 +56,6 @@ export default function Mine() {
 
   return (
     <View style={styles.container}>
-      <>
-        <Image
-          source={{
-            uri:
-              user.user_metadata.avatar_url ||
-              "https://via.placeholder.com/100",
-          }}
-          style={styles.avatar}
-        />
-        <Text style={styles.text}>Welcome, {user.email}</Text>
-      </>
       <TouchableOpacity style={styles.button} onPress={handleSignOut}>
         <Text style={styles.buttonText}>Sign Out</Text>
       </TouchableOpacity>
