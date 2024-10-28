@@ -12,12 +12,14 @@ import {
 import { useRouter } from "expo-router";
 import { signInByEmail } from "@/utils/supabase";
 import signInByGoogle from '@/utils/auth/google.auth'
+import { useUser } from '@/hooks/user'
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const { setUser } = useUser();
 
   const handleLoginByGoogle = () => {
     signInByGoogle({
@@ -31,7 +33,8 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     setLoading(true);
-    const { error } = await signInByEmail(email, password);
+    const { data, error } = await signInByEmail(email, password);
+    setUser(data.user);
     setLoading(false);
     if (error) {
       Toast.show(error.message);
