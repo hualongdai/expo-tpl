@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { View, StyleSheet, TouchableOpacity, Image } from "react-native";
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Text,
   Flex,
@@ -8,28 +8,32 @@ import {
   WingBlank,
   Icon,
   Button,
-  Toast
+  Toast,
 } from "@ant-design/react-native";
 import { nativeApplicationVersion } from "expo-application";
-import { useUser } from '@/hooks/user';
+import { useUser } from "@/hooks/user";
 // import * as ImagePicker from "expo-image-picker";
-import type { IconNames } from '@ant-design/react-native/lib/icon';
-import { signOut } from '@/utils/supabase';
-import { getAvatarText } from '@/utils'
-import { useRouter } from 'expo-router'
+import type { IconNames } from "@ant-design/react-native/lib/icon";
+import { signOut } from "@/utils/supabase";
+import { useRouter } from "expo-router";
 
-const UserProfileScreen = () => {
+const SettingScreen = () => {
   const router = useRouter();
   const menuItems: { title: string; icon: IconNames; onPress: () => void }[] = [
     { title: "保证金", icon: "safety", onPress: () => {} },
     { title: "我的推广", icon: "share-alt", onPress: () => {} },
     { title: "客服中心", icon: "customer-service", onPress: () => {} },
     { title: "意见反馈", icon: "form", onPress: () => {} },
-    { title: "设置", icon: "setting", onPress: () => {router.push('/mine/setting')} },
+    {
+      title: "设置",
+      icon: "setting",
+      onPress: () => {
+        router.push("/mine/setting");
+      },
+    },
   ];
   const insets = useSafeAreaInsets();
-  const { user }  = useUser();
-  console.log("user", user);
+  const { user } = useUser();
   const [image, setImage] = useState<string | null>(null);
 
   const logout = async () => {
@@ -38,32 +42,13 @@ const UserProfileScreen = () => {
       router.replace("/login");
       return;
     }
-    Toast.info('退出登录失败')
+    Toast.info("退出登录失败");
   };
 
   return (
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: insets.top }]} />
       <WingBlank size="lg">
-        <View style={styles.avatarBox}>
-          <View style={styles.avatar}>
-            {user && user.avatar_url ? (
-              <Image
-                source={{
-                  uri: user.avatar_url,
-                }}
-                style={styles.avatarImage}
-              />
-            ) : (
-              <Text style={styles.avatarText}>
-                {getAvatarText(user?.remark || user?.nick_name || user?.name || user?.email)}
-              </Text>
-            )}
-          </View>
-          <Text style={styles.profileName}>
-            {user ? user.remark || user.nick_name : "未登录用户"}
-          </Text>
-        </View>
         <WhiteSpace size="lg" />
         <View style={styles.card}>
           {menuItems.map((item, index) => (
@@ -158,7 +143,7 @@ const styles = StyleSheet.create({
   },
   signOut: {
     borderWidth: 0,
-  }
+  },
 });
 
-export default UserProfileScreen;
+export default SettingScreen;

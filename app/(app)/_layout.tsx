@@ -5,41 +5,50 @@ import {
   ThemeProvider,
 } from "@react-navigation/native";
 import { useEffect, useState } from "react";
-import { getCurrentUser } from "@/utils/supabase";
+import { getCurrentUserBySession, getContactByUserId } from "@/utils/supabase";
 import { useColorScheme } from "@/hooks/useColorScheme";
-import { UserProvider } from "@/hooks/user";
-import { Provider } from "@ant-design/react-native";
-import { User} from '@supabase/supabase-js'
+import { useUser } from "@/hooks/user";
+import { Provider as AntdProvider } from "@ant-design/react-native";
+import { ChatContextProvider } from "@/hooks/chat";
 
 export default function AppLayout() {
   const colorScheme = useColorScheme();
   const router = useRouter();
+  const { setUser } = useUser();
 
   useEffect(() => {
-    getCurrentUser()
-      .then((user) => {
-        console.log("getCurrentUser", user);
+    const initSessionInfo = async () => {
+      try {
+        const user = await getCurrentUserBySession();
         if (user) {
+          const { data, error } = await getContactByUserId(user.id);
+          if (error) {
+            setUser(user.user_metadata);
+          } else {
+            console.log("user.user_metadata", user.user_metadata);
+            setUser({ ...user.user_metadata, ...data });
+          }
           router.replace("/(tabs)");
         } else {
           router.replace("/login");
         }
-      })
-      .catch((error) => {
-        console.log("error", error);
-      });
+      } catch (error) {
+        router.replace("/login");
+      }
+    }
+    initSessionInfo();
   }, []);
 
-  
 
   return (
-    <Provider
+    <AntdProvider
       theme={{ brand_primary: "#3274F9", primary_button_fill: "#3274F9" }}
     >
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        <UserProvider>
+        <ChatContextProvider>
           <Stack>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="chat" options={{ title: "聊天" }} />
             <Stack.Screen
               name="login"
               options={{ headerShown: false, title: "登录" }}
@@ -52,13 +61,10 @@ export default function AppLayout() {
               name="resetPassword"
               options={{ headerShown: false, title: "忘记密码" }}
             />
-            <Stack.Screen
-              name="updatePassword"
-              options={{ title: "重置密码" }}
-            />
+            <Stack.Screen name="updatePassword" options={{ title: "重置密码" }} />
           </Stack>
-        </UserProvider>
+        </ChatContextProvider>
       </ThemeProvider>
-    </Provider>
+    </AntdProvider>
   );
 }

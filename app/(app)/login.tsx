@@ -10,7 +10,7 @@ import {
   Toast,
 } from "@ant-design/react-native";
 import { useRouter } from "expo-router";
-import { signInByEmail } from "@/utils/supabase";
+import { signInByEmail, getContactByUserId } from "@/utils/supabase";
 import signInByGoogle from '@/utils/auth/google.auth'
 import { useUser } from '@/hooks/user'
 
@@ -34,13 +34,20 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     setLoading(true);
     const { data, error } = await signInByEmail(email, password);
-    setUser(data.user);
     setLoading(false);
     if (error) {
-      Toast.show(error.message);
-    } else {
-      Toast.show({ content: "登录成功", onClose: handleLoginSuccess });
+      Toast.show('登录失败，请重试');
+      return;
     }
+    if (data.user) {
+      const { data: contactData, error: contactError } = await getContactByUserId(data.user.id);
+      if (contactError) {
+        setUser(data.user.user_metadata);
+      } else {
+        setUser({ ...data.user.user_metadata, ...contactData });
+      }
+    }
+    Toast.show({ content: "登录成功", onClose: handleLoginSuccess });
   };
 
   const gotoRegisterPage = () => {

@@ -57,3 +57,23 @@ export const getCurrentUser = async () => {
   const { data: { user } } = await supabase.auth.getUser();
   return user;
 };
+
+export const getCurrentUserBySession = async () => {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  return session?.user;
+};
+
+export const getContacts = async () => {
+  const { data, error } = await supabase.from("contacts").select("*");
+  return { data, error };
+}
+
+export const getContactByUserId = async (userId: string) => {
+  const { data, error } = await supabase
+    .from("contacts")
+    .select("id, user_id, wechat_id, nick_name, remark, avatar_url")
+    .eq("user_id", userId);
+  return { data: data ? data[0] : {}, error };
+}
