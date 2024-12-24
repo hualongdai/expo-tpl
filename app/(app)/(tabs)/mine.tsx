@@ -29,7 +29,6 @@ const UserProfileScreen = () => {
   ];
   const insets = useSafeAreaInsets();
   const { user }  = useUser();
-  console.log("user", user);
   const [image, setImage] = useState<string | null>(null);
 
   const logout = async () => {
@@ -47,16 +46,18 @@ const UserProfileScreen = () => {
       <WingBlank size="lg">
         <View style={styles.avatarBox}>
           <View style={styles.avatar}>
-            {user && user.avatar_url ? (
+            {user && (user.avatar_url || user.picture) ? (
               <Image
                 source={{
-                  uri: user.avatar_url,
+                  uri: user.avatar_url || user.picture,
                 }}
                 style={styles.avatarImage}
               />
             ) : (
               <Text style={styles.avatarText}>
-                {getAvatarText(user?.remark || user?.nick_name || user?.name || user?.email)}
+                {getAvatarText(
+                  user?.remark || user?.nick_name || user?.name || user?.email
+                )}
               </Text>
             )}
           </View>

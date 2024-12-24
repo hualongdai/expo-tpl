@@ -77,3 +77,40 @@ export const getContactByUserId = async (userId: string) => {
     .eq("user_id", userId);
   return { data: data ? data[0] : {}, error };
 }
+
+export const querySessionIsExist = async (senderUserId: string, receiverUserId: string) => {
+  const { data, error } = await supabase
+    .from("sessions")
+    .select()
+    .contains("user_id_list", [senderUserId, receiverUserId]);
+  return { data, error }
+}
+
+export const updateSessionData = async (
+  senderUserId: string,
+  receiverUserId: string,
+  text: string,
+  optType: 'new' | 'update',
+  sessionId?: string
+) => {
+  if (!optType) {
+    return { data: [], error: { message: "先指定optType" } };
+  }
+  if (optType === "new") {
+    const { data, error } = await supabase.from("sessions").insert([
+      {
+        user_id_list: [senderUserId, receiverUserId],
+        last_message: text,
+      },
+    ]).select();
+    return { data, error };
+  } else {
+    const { data, error } = await supabase
+      .from("sessions")
+      .update({
+        last_message: text,
+      })
+      .eq("id", sessionId);
+    return { data, error };
+  }
+};

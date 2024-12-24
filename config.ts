@@ -15,3 +15,7 @@ export const AndroidClientId = "YOUR_ANDROID_CLIENT_ID";
 export const webClientId = "YOUR_ANDROID_CLIENT_ID";
 
 // ---- Google Service end ----
+
+
+// ---- database do not modify ----
+const databasePassword = 't6o8VJT5Tmb6xE3O'

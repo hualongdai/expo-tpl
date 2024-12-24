@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 
 
-export function formatTime(timestamp: number): string {
+export function formatTime(timestamp: string): string {
   const now = dayjs();
   const msgTime = dayjs(timestamp);
   const diffInDays = now.diff(msgTime, "day");

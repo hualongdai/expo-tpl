@@ -25,7 +25,6 @@ export default function AppLayout() {
           if (error) {
             setUser(user.user_metadata);
           } else {
-            console.log("user.user_metadata", user.user_metadata);
             setUser({ ...user.user_metadata, ...data });
           }
           router.replace("/(tabs)");

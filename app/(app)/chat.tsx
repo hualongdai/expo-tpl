@@ -11,6 +11,7 @@ import {
   Dimensions,
 } from "react-native";
 import { StatusBar } from 'expo-status-bar';
+import D from 'dayjs'
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon, Toast } from "@ant-design/react-native";
 import { useNavigation, useLocalSearchParams } from "expo-router";
@@ -19,9 +20,28 @@ import SimpleLineIcons from "@expo/vector-icons/SimpleLineIcons";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useChatContext, IMessage } from "@/hooks/chat";
 import { useUser } from "@/hooks/user";
-import { supabase } from "@/utils/supabase";
+import {
+  supabase,
+  querySessionIsExist,
+  updateSessionData,
+} from "@/utils/supabase";
 import { formatTime } from "@/utils/chat";
 
+interface ISession {
+  id: string;
+  user_id_list: string[];
+  is_group_chat: boolean;
+  last_message: string;
+}
+
+const RelationshipTypeMap = {
+  'Message': 'Message',
+  'SysMessage': 'SysMessage',
+  'GroupMessage': 'GroupMessage',
+  'RobotMessage': 'RobotMessage'
+}
+
+type RelationshipType = keyof typeof RelationshipTypeMap;
 
 const ChatScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
@@ -29,7 +49,7 @@ const ChatScreen: React.FC = () => {
   const flatListRef = useRef<FlatList>(null);;
 
   const navigation = useNavigation();
-  const { contactName, contactId, userId, avatarUrl } = useLocalSearchParams();
+  const { contactName, contactId, contactUserId, avatarUrl } = useLocalSearchParams();
   const colorScheme = useColorScheme();
   const { messages } = useChatContext();
   const { user } = useUser();
@@ -58,7 +78,7 @@ const ChatScreen: React.FC = () => {
   }) => {
     const screenWidth = Dimensions.get("window").width;
     const showTimestamp =
-      index === 0 || item.timestamp - messages[index - 1].timestamp > 300000; // 5 minutes
+      index === 0 || D(item.timestamp).valueOf() - D(messages[index - 1].timestamp).valueOf() > 300000; // 5 minutes
     return (
       <View>
         {showTimestamp && (
@@ -80,22 +100,52 @@ const ChatScreen: React.FC = () => {
   };
 
   const sendMessage = async () => {
-    if (inputText.trim()) {
-      const { error } = await supabase.from("messages").insert([
-        {
-          text: inputText.trim(),
-          username: contactName,
-          user_id: userId,
-          contact_id: contactId,
-        },
-      ]);
-      if (error) {
-        Toast.show('发送失败，请重试');
+    const text = inputText.trim();
+    const curUserId = user?.user_id;
+    if (!text || !curUserId) return;
+    const { data: sessionData, error: sessionError } = await querySessionIsExist(curUserId, contactUserId as string);
+    if (sessionError) {
+      Toast.show('查询会话记录出错，请重试')
+      return;
+    }
+    let sessionId;
+    if (sessionData?.length === 0) {
+      const { data: newSessionData, error: newSessionError } = await updateSessionData(curUserId, contactUserId as string, text, 'new');
+      if (newSessionError) {
+        Toast.show("创建会话记录出错，请重试");
         return;
       }
-      setInputText("");
-      flatListRef.current?.scrollToEnd({ animated: true });
+      sessionId = newSessionData ? (newSessionData as unknown as ISession[])[0].id : '';
+    } else {
+      sessionId = (sessionData as unknown as ISession[])[0].id;
+      const { error: newSessionError } = await updateSessionData(
+        curUserId,
+        contactUserId as string,
+        text,
+        "update",
+        sessionId
+      );
+      if (newSessionError) {
+        Toast.show("更新会话记录出错，请重试");
+        return;
+      }
     }
+    const { error } = await supabase.from("messages").insert([
+      {
+        text,
+        username: contactName,
+        user_id: contactUserId as string,
+        contact_id: contactId,
+        session_id: sessionId,
+        message_type: RelationshipTypeMap.Message,
+      },
+    ]);
+    if (error) {
+      Toast.show("发送失败，请重试");
+      return;
+    }
+    setInputText("");
+    flatListRef.current?.scrollToEnd({ animated: true });
   };  
 
   return (

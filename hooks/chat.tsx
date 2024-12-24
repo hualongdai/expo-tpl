@@ -9,39 +9,47 @@ import {
 } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "@/utils/supabase";
-import { Session, RealtimeChannel, RealtimeMessage } from "@supabase/supabase-js";
+import { RealtimeChannel, RealtimeMessage } from "@supabase/supabase-js";
 
 export interface IMessage {
   id: number;
   text: string;
   username: string;
-  timestamp: number;
+  timestamp: string;
   user_id: string;
   contact_id: number;
   avatar_url: string;
 }
 //  {"contact_id": 2, "created_at": "2024-10-30T07:17:45.09551+00:00", "id": 2, "text": "Test", "timestamp": "2024-10-30T07:17:45.09551+00:00", "user_id": "9c3c6c06-1b4b-4286-aaa1-6303d72089f5", "username": ""}
 
+export interface ISession {
+  id: number;
+  user_id_list: string[];
+  is_group_chat: boolean;
+  last_message: string;
+  group_name: string;
+  receiver_user_id: string;
+  last_message_time: string;
+}
+export interface IFullSession extends ISession {
+  username: string;
+  avatar_url: string;
+  contact_id: number;
+}
+
 type ChatContextType = {
   messages: IMessage[];
+  sessions: IFullSession[];
   loadingInitial?: boolean;
   isOnBottom?: boolean;
   error?: string;
-  getMessagesAndSubscribe?: () => void;
-  // username: string;
-  // setUsername?: (username: string) => void;
-  // getRandomUsername?: () => string;
   scrollRef?: any;
   onScroll?: (e: any) => void;
   scrollToBottom?: () => void;
   unViewedMessageCount?: number;
-  // session?: Session | null;
 };
 
-export const ChatContext = createContext<ChatContextType>({
-  messages: [],
-  username: "",
-} as ChatContextType);
+export const ChatContext = createContext<ChatContextType>({ messages: [], sessions: [], username: "" } as ChatContextType);
 
 export const ChatContextProvider: FC<PropsWithChildren> = ({ children }) => {
   let myChannel: RealtimeChannel | null = null;
@@ -49,10 +57,8 @@ export const ChatContextProvider: FC<PropsWithChildren> = ({ children }) => {
   const [loadingInitial, setLoadingInitial] = useState(true);
   const [isInitialLoad, setIsInitialLoad] = useState(false);
 
-  // const [username, setUsername] = useState("");
-  // const [session, setSession] = useState<Session | null>(null);
   const [messages, setMessages] = useState<IMessage[]>([]);
-  const [summaryMessages, setSummaryMessages] = useState<IMessage[]>([]);
+  const [sessions, setSessions] = useState<IFullSession[]>([]);
   const [error, setError] = useState("");
   const [newIncomingMessageTrigger, setNewIncomingMessageTrigger] = useState<any>(null);
   const [unViewedMessageCount, setUnViewedMessageCount] = useState(0);
@@ -67,10 +73,6 @@ export const ChatContextProvider: FC<PropsWithChildren> = ({ children }) => {
     }
     scrollRef.current.scrollToEnd = scrollRef.current.scrollHeight;
   }
-
-  // const getRandomUsername = () => {
-  //   return `random${Date.now().toString().slice(-4)}`;
-  // }
 
   // const initializeUser = (session: Session) => {
   //   setSession(session);
@@ -90,7 +92,7 @@ export const ChatContextProvider: FC<PropsWithChildren> = ({ children }) => {
     if (messages.length) return;
     const { data, error } = await supabase
       .from("messages")
-      .select("*, contacts!inner(remark, nick_name, avatar_url)")
+      .select("*, contacts(remark, nick_name, avatar_url)")
       .range(0, 49)
       .order("id", { ascending: true });
 
@@ -108,6 +110,31 @@ export const ChatContextProvider: FC<PropsWithChildren> = ({ children }) => {
     }
     setIsInitialLoad(true);
     setMessages(filterData);
+  };
+
+  const getInitialSessions = async () => {
+    if (sessions.length) return;
+    const { data, error } = await supabase
+      .from("sessions")
+      .select()
+      .range(0, 49)
+      .order("id", { ascending: true });
+
+    const filterData = data
+      ? data.map(({ contacts, ...rest }) => ({
+          ...rest,
+          username: contacts.remark || contacts.nick_name,
+          avatar_url: contacts.avatar_url,
+          contact_id: contacts.id,
+        }))
+      : [];
+    setLoadingInitial(false);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    setIsInitialLoad(true);
+    setSessions(filterData);
   };
 
   const onScroll = async ({ target }: any) => {
@@ -136,6 +163,7 @@ export const ChatContextProvider: FC<PropsWithChildren> = ({ children }) => {
 
   const getMessagesAndSubscribe = async () => {
     await getInitialMessages();
+    await getInitialSessions();
     if (!myChannel) {
       myChannel = supabase
         .channel("chat-channel")
@@ -154,6 +182,19 @@ export const ChatContextProvider: FC<PropsWithChildren> = ({ children }) => {
             setNewIncomingMessageTrigger(payload.new);
           }
         )
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "sessions",
+          },
+          (payload) => {
+            console.log(payload.new);
+            const newSession = payload.new as IFullSession;
+            setSessions((prevSessions) => [...prevSessions, newSession]);
+          }
+        )
         .subscribe();
     }
   };
@@ -164,7 +205,7 @@ export const ChatContextProvider: FC<PropsWithChildren> = ({ children }) => {
     //   initializeUser(session as Session);
     // });
 
-    // 获取消息列表和订阅
+    // 获取消息列表 和会话列表 和订阅他们的变化
     getMessagesAndSubscribe();
 
     // const {
@@ -203,9 +244,9 @@ export const ChatContextProvider: FC<PropsWithChildren> = ({ children }) => {
     <ChatContext.Provider
       value={{
         messages,
+        sessions,
         loadingInitial,
         error,
-        getMessagesAndSubscribe,
         scrollRef,
         onScroll,
         scrollToBottom,

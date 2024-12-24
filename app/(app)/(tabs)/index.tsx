@@ -1,4 +1,4 @@
-import React from "react";
+import { useEffect, useCallback } from "react";
 import {
   View,
   StyleSheet,
@@ -11,44 +11,34 @@ import {
   Text,
   SearchBar,
   Badge,
+  Toast
 } from "@ant-design/react-native";
-import { useChatContext, IMessage } from '@/hooks/chat';
+import { useChatContext, IFullSession } from "@/hooks/chat";
 import { useUser } from '@/hooks/user';
 import { getAvatarText } from '@/utils';
 import { formatTime } from "@/utils/chat";
-import { useRouter } from 'expo-router';
+import { supabase } from "@/utils/supabase";
+import { useRouter } from "expo-router";
 
 const MessagesScreen = () => {
   const router = useRouter();
   const { user } = useUser();
-  const { messages, unViewedMessageCount } = useChatContext();
-  console.log("messages", messages, unViewedMessageCount);
+  const { unViewedMessageCount, sessions } = useChatContext();
+  console.log("sessions", sessions);
 
-  // 将 messages 数组里的message，按照user_id 进行分组, 并将每个分组的第一条消息作为预览消息，如果user_id 是当前用户，则丢弃这个条消息
-  const groupedMessages = (messages: IMessage[]) =>
-    Object.values(
-      messages.reduce((acc, message) => {
-        if (message.user_id !== user?.user_id) {
-          const userId = message.user_id;
-          acc[userId] = message;
-        }
-        return acc;
-      }, {} as Record<string, IMessage>)
-    );
-
-  const gotoChatPage = (data: IMessage) => {
+  const gotoChatPage = (data: IFullSession) => {
     router.push({
       pathname: "/chat",
       params: {
         contactName: data.username,
-        contactId: data.contact_id,
-        userId: data.user_id,
+        contactId: data.receiver_user_id,
+        contactUserId: data.receiver_user_id,
         avatarUrl: data.avatar_url,
       },
     });
   };
 
-  const renderMessageItem = ({ item }: { item: IMessage }) => (
+  const renderMessageItem = ({ item }: { item: IFullSession }) => (
     <TouchableOpacity
       style={styles.messageItem}
       onPress={() => gotoChatPage(item)}
@@ -63,10 +53,10 @@ const MessagesScreen = () => {
       <View style={styles.messageContent}>
         <View style={styles.messageHeader}>
           <Text style={styles.messageName}>{item.username}</Text>
-          <Text style={styles.messageTime}>{formatTime(item.timestamp)}</Text>
+          <Text style={styles.messageTime}>{formatTime(item.last_message_time)}</Text>
         </View>
         <Text style={styles.messagePreview} numberOfLines={1}>
-          {item.text}
+          {item.last_message}
         </Text>
       </View>
       <Badge text={unViewedMessageCount} style={styles.unreadBadge} />
@@ -77,7 +67,7 @@ const MessagesScreen = () => {
     <SafeAreaView style={styles.container}>
       <SearchBar placeholder="搜索" />
       <FlatList
-        data={groupedMessages(messages)}
+        data={sessions}
         renderItem={renderMessageItem}
         keyExtractor={(item) => `${item.id}`}
         style={styles.messageList}
